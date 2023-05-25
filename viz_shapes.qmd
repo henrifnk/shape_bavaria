@@ -1,0 +1,80 @@
+---
+title: "Vizualize Shapes in Hydroloigal Bavaria"
+author: "Henri Funk"
+format: html
+editor: visual
+---
+
+## Set Up
+
+This package uses `raster`\` and `sf`\` packages for visualization.
+
+```{r setup, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(sf)
+library(stars)
+library(stringr)
+source("R/helper.R")
+
+shapes = list.files(pattern = ".shp$", full.names = TRUE, recursive = TRUE)
+tifs = list.files(pattern = ".tif$", full.names = TRUE, recursive = TRUE)
+```
+
+## Bavarias DGM
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+plot_dem = function(plot_water = TRUE, plot_borders = TRUE, plot_gauges = TRUE) {
+  
+}
+
+# Read dem file
+dem_file = list.files(pattern = "dgm.tif$", full.names = TRUE, recursive = TRUE)
+dem <-read_stars(dem_file)
+dem_crs = st_crs(dem)
+dem_df <- as.data.frame(dem, xy = T)
+colnames(dem_df) = c("lon", "lat", "dem")
+
+# Read boundary shape file & unify crs
+boundary = read_shape("Boundary.shp$", dem_crs)
+ezg = read_shape("EZG(.*?).shp$", dem_crs)
+river_maj = read_shape("MAJOR(.*?).shp$", dem_crs)
+river_min = read_shape("MDK.shp$", dem_crs)
+lake = read_shape("Seen(.*?).shp$", dem_crs)
+gauges = read_shape("Flusspegel(.*?).shp$", dem_crs)
+
+# read nc files
+pr_path = list.files(pattern= "pr(.*?).nc$", full.names = TRUE, recursive = TRUE)
+pr_march = suppressWarnings(read_stars(pr_path, quiet = TRUE))
+st_crs(pr_march) = dem_crs
+
+pr_march <- as.data.frame(pr_march, xy = T)
+colnames(pr_march) <- c("lon", "lat", "time", "pr")
+pr_march <- pr_march[is.na(df) == 0, ] 
+
+# Final Plot
+ggplot() +
+  geom_raster(data = dem_df, mapping = aes(x = lon, y = lat, fill = dem)) +
+  scale_fill_gradient2(low = "#89CC78", mid = "#FFEDAC", high = "#AA8D63",
+                       midpoint = 1800, na.value = "white", guide = NULL) +
+  geom_sf(data = boundary_crs, fill = NA, linewidth = 0.5) +
+  geom_sf(data = ezg, fill = NA, colour = "grey", linewidth = 0.1) +
+  geom_sf(data = river_maj, fill = NA, colour = "#40AEDF", linewidth = 0.5) +
+  geom_sf(data = river_min, fill = NA, colour = "#40AEDF", linewidth = 0.1) +
+  geom_sf(data = lake, fill = "#40AEDF", colour = NA) +
+  geom_sf(data = gauges, size = 0.3) +
+  theme_minimal()  +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor =element_blank())
+
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
